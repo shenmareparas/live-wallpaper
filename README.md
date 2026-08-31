@@ -1,4 +1,4 @@
-<a href='https://github.com/shenmareparas/live-wallpaper'><img alt='Live Wallpaper App Icon' src="https://raw.githubusercontent.com/shenmareparas/live-wallpaper/master/App%20Icon.png" width="220"/></a>
+<a href='https://github.com/shenmareparas/live-wallpaper'><img alt='Live Wallpaper App Icon' src="https://raw.githubusercontent.com/shenmareparas/live-wallpaper/master/Resources/App%20Icon.png" width="220"/></a>
 
 # 🎬 Live Wallpaper for macOS: Dynamic Desktop & Lock Screen Engine
 
