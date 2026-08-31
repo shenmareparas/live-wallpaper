@@ -4,15 +4,75 @@ This document outlines the architecture, file structure, key technical solutions
 
 ---
 
-## 📂 Project Structure
+## 📂 Project Structure & Architecture
 
-*   [main.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/main.swift): Entry point of the AppKit lifecycle. Manages the system status bar menu item, delegate setups, preferences window opening, relaunch handlers, and global screen lock/unlock lifecycle events.
-*   [SettingsView.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/SettingsView.swift): SwiftUI settings panel interface. Contains the Wallpaper Storage Library, dynamic HEVC video transcode engine, database entries updates, App Support copy procedures, and the step-by-step setup instructions card.
-*   [WallpaperWindow.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/WallpaperWindow.swift): Background overlay window that plays the selected video directly on the desktop. Monitors local parameters (LPM, obscuration, manual pause) to pause playback. Also manages the image→video crossfade transition on unlock.
-*   [Info.plist](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Info.plist): Application configuration property list (runs as an agent without a Dock icon using `LSUIElement = true`).
-*   [build.sh](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/build.sh): Build script. Compiles the native App bundle, processes asset catalogs using `actool`, and performs code signing.
-*   [Media.xcassets](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Media.xcassets): Xcode Asset Catalog containing the compiled template vector graphics (e.g. `MenuIcon` SVG asset).
-*   [make_dmg.sh](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/make_dmg.sh): Helper script that builds the professional macOS installer DMG using the local `DMGMaker` suite.
+The codebase is organized into a modular Swift architecture (AppKit lifecycle + SwiftUI liquid glass UI + AVFoundation engine + Services):
+
+```
+live-wallpaper/
+├── Sources/
+│   ├── App/
+│   │   ├── LiveWallpaperApp.swift          # @main entrypoint & AppKit delegate adaptor
+│   │   └── AppDelegate.swift               # NSStatusItem menu, sleep/lock observers, shuffle timer, window management
+│   ├── Models/
+│   │   ├── WallpaperItem.swift             # Wallpaper library model & YouTube metadata
+│   │   └── EngineState.swift               # Playback status, power state, and telemetry models
+│   ├── Engine/
+│   │   └── WallpaperWindow.swift           # Borderless desktop overlay window, AVPlayerLayer, occlusion & crossfade
+│   ├── Services/
+│   │   ├── WallpaperStoreService.swift     # macOS entries.json dynamic wallpaper store sync & WallpaperAgent control
+│   │   ├── VideoTranscodeService.swift     # Hardware-accelerated HEVC transcode & audio stripping
+│   │   ├── YouTubeDownloaderService.swift  # Background video downloader engine (yt-dlp integration)
+│   │   ├── ThumbnailService.swift          # Asynchronous frame extractor with NSCache memory pooling
+│   │   └── FallbackDesktopService.swift    # CoreGraphics dark-mode instructions bitmap generator
+│   └── Views/
+│       ├── SettingsView.swift              # Main window coordinator & liquid glass sidebar navigation
+│       ├── Dashboard/                      # Real-time engine telemetry, hero preview, and monitor layout
+│       │   ├── DashboardView.swift
+│       │   ├── ActiveWallpaperHeroCard.swift
+│       │   ├── MonitorArrangementView.swift
+│       │   ├── WaveformPulseView.swift
+│       │   └── DiagnosticsMetricsGrid.swift
+│       ├── Wallpaper/                      # Wallpaper library manager & YouTube downloader interface
+│       │   ├── WallpaperSettingsView.swift
+│       │   ├── WallpaperLibraryCard.swift
+│       │   └── YouTubeDownloaderSection.swift
+│       ├── Settings/                       # Speed sliders, crossfade presets & auto-shuffle timers
+│       │   └── EngineSettingsView.swift
+│       ├── About/                          # Versioning, author credits & GitHub links
+│       │   └── AboutView.swift
+│       └── Components/                     # Reusable glassmorphic UI primitives & notifications
+│           ├── VisualEffectView.swift
+│           ├── TabButton.swift
+│           ├── CustomCorners.swift
+│           └── NotificationNames.swift
+├── Resources/
+│   ├── Info.plist                          # Application bundle configuration (LSUIElement = true)
+│   ├── entitlements.plist                  # Code signing entitlements
+│   ├── AppIcon.icns                        # Multi-resolution macOS icon bundle
+│   ├── App Icon.png                        # Master application icon
+│   ├── Menu Icon.svg                       # Dynamic vector status menu template icon
+│   └── Media.xcassets/                     # Xcode Asset Catalog containing compiled assets
+├── scripts/
+│   ├── build.sh                            # Main recursive build and signing script
+│   └── make_dmg.sh                         # DMG packaging script
+├── build.sh                                # Root convenience wrapper calling scripts/build.sh
+├── make_dmg.sh                             # Root convenience wrapper calling scripts/make_dmg.sh
+└── dmg_maker/                              # Standalone Swift Package for generating installer DMGs
+```
+
+### Module Responsibilities:
+
+*   **[LiveWallpaperApp.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/App/LiveWallpaperApp.swift)**: SwiftUI `@main` lifecycle entrypoint bridging AppKit execution through `@NSApplicationDelegateAdaptor(AppDelegate.self)`.
+*   **[AppDelegate.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/App/AppDelegate.swift)**: Coordinates `NSStatusItem` menu, global workspace sleep/wake and distributed lock/unlock notification observers, shuffle timer, and multi-monitor `WallpaperWindow` lifecycle.
+*   **[WallpaperWindow.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/Engine/WallpaperWindow.swift)**: Borderless `NSWindow` overlay pinned at `CGWindowLevelForKey(.desktopWindow)`. Manages `AVQueuePlayer`, `AVPlayerLooper`, occlusion polling (`kCGWindowListOptionOnScreenOnly`), Low Power Mode detection, and two-phase unlock image-to-video crossfades.
+*   **[WallpaperStoreService.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/Services/WallpaperStoreService.swift)**: Manages integration with native macOS `entries.json` dynamic wallpaper store, deterministic static UUID alignment (`LW000000-0000-4000-8000-000000000003`), and `WallpaperAgent` restarts.
+*   **[VideoTranscodeService.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/Services/VideoTranscodeService.swift)**: Converts non-compliant video formats to hardware-accelerated HEVC (H.265 `hvc1`) and strips audio streams.
+*   **[YouTubeDownloaderService.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/Services/YouTubeDownloaderService.swift)**: Locates `yt-dlp` in system paths and downloads online videos directly into Application Support storage.
+*   **[ThumbnailService.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/Services/ThumbnailService.swift)**: Background frame extractor using `AVAssetImageGenerator` and RAM caching with `NSCache<NSURL, NSImage>`.
+*   **[FallbackDesktopService.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/Services/FallbackDesktopService.swift)**: Generates a high-resolution dark-mode onboarding image when no wallpaper is selected and applies it via `NSWorkspace.shared.setDesktopImageURL`.
+*   **[SettingsView.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/Views/SettingsView.swift)**: Master navigation coordinator implementing Liquid Glass sidebar aesthetics, Stage Manager activation policy switching (`.regular` $\leftrightarrow$ `.accessory`), and tab switching.
+*   **[EngineSettingsView.swift](file:///Users/parasshenmare/Developer/other_projects/live-wallpaper/Sources/Views/Settings/EngineSettingsView.swift)**: Playback speed multipliers (0.5x–2.0x), crossfade presets (0.1s–2.0s), auto-shuffle intervals (1m–1h), and launch-at-login settings.
 
 ---
 
@@ -114,3 +174,25 @@ This document outlines the architecture, file structure, key technical solutions
 *   **Diagnostics Metrics Grid**: Provides real-time rendering statistics, Eco/Normal power modes, obscuration status, and decoder engine type.
 *   **Performance Presets**: Quick speed pills (0.5x, 1.0x, 1.5x, 2.0x) and transition style presets (Instant, Balanced, Gradual) for rapid configuration.
 *   **Proportional App Sizing**: Settings window resized to 760x540 with max-width boundaries on preferences to comply with HIG sidebar layouts.
+
+---
+
+## 🛡️ First-Time Launch & macOS Gatekeeper Handling
+
+When launching ad-hoc built or downloaded builds outside the Mac App Store, macOS Gatekeeper security policies may trigger a warning modal on first execution:
+
+> *"Live Wallpaper cannot be opened because Apple cannot check it for malicious software"* or *"unidentified developer"*.
+
+### Resolution Workflow for End Users & Testers:
+1. Click **Done** / **OK** / **Cancel** to dismiss the initial system dialog.
+2. Open **System Settings** $\rightarrow$ navigate to **Privacy & Security**.
+3. Scroll down to the **Security** subsection.
+4. Locate the message: *"LiveWallpaper was blocked from use because it is not from an identified developer"*.
+5. Click **Open Anyway**, authenticate via Touch ID or administrator password, and confirm **Open**.
+
+### Developer Bypass (Quarantine Attribute Removal):
+If distributing the `.app` directly or installing locally from a build artifact, remove the `com.apple.quarantine` extended attribute via Terminal:
+```bash
+xattr -cr /path/to/LiveWallpaper.app
+```
+

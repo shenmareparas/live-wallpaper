@@ -135,6 +135,25 @@ A lightweight, ultra-optimized native macOS menu bar application built in pure *
     ./make_dmg.sh
     ```
 
+> [!NOTE]
+> ### 🛡️ First-Time Launch & macOS Gatekeeper Notice
+> When opening the application for the first time (especially if downloaded via browser or DMG without an Apple Developer ID signature), macOS Gatekeeper may present a dialog stating:
+> 
+> *"Live Wallpaper cannot be opened because Apple cannot check it for malicious software"* or *"developer cannot be verified"*.
+> 
+> **To bypass and open the app:**
+> 1. Click **Done** / **OK** / **Cancel** on the prompt dialog.
+> 2. Open **System Settings** on your Mac.
+> 3. Navigate to **Privacy & Security**.
+> 4. Scroll down to the **Security** section.
+> 5. You will see a notice: *"LiveWallpaper was blocked from use because it is not from an identified developer"*. Click **Open Anyway**.
+> 6. Enter your Mac administrator password / Touch ID and confirm by clicking **Open**.
+> 
+> *Alternatively*, you can run this one-time command in Terminal to strip quarantine attributes:
+> ```bash
+> xattr -cr /Applications/LiveWallpaper.app # or path to LiveWallpaper.app
+> ```
+
 ---
 
 ## 📁 Project Structure
