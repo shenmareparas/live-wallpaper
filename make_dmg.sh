@@ -1,12 +1,5 @@
 #!/bin/bash
 set -e
 
-if [ -d "/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk" ]; then
-    export SDKROOT="/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk"
-fi
-
-echo "Generating DMG installer using DMGMaker..."
-cd dmg_maker
-swift run "DMG Maker" --app "../LiveWallpaper.app" --name "Live Wallpaper"
-cd ..
-echo "DMG created successfully: Live Wallpaper.dmg"
+DIR="$(cd "$(dirname "$0")" && pwd)"
+exec "$DIR/scripts/make_dmg.sh" "$@"

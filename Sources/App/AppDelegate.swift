@@ -1,17 +1,6 @@
 import SwiftUI
 import AppKit
 
-@main
-struct LiveWallpaperApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
-    var body: some Scene {
-        Settings {
-            Text("Live Wallpaper Settings")
-        }
-    }
-}
-
 class AppDelegate: NSObject, NSApplicationDelegate {
     static private(set) var shared: AppDelegate?
     var wallpaperWindows: [NSScreen: WallpaperWindow] = [:]
@@ -48,10 +37,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         distCenter.addObserver(self, selector: #selector(screenLocked), name: NSNotification.Name("com.apple.screenIsLocked"), object: nil)
         distCenter.addObserver(self, selector: #selector(screenUnlocked), name: NSNotification.Name("com.apple.screenIsUnlocked"), object: nil)
         
-        // Observe system sleep / wake via NSWorkspace.
-        // willSleepNotification fires BEFORE the display sleeps, giving us a
-        // chance to tear down our desktop overlay before the lock screen renders
-        // (unlike com.apple.screenIsLocked which fires AFTER the lock screen shows).
+        // Observe system sleep / wake via NSWorkspace
         let wsCenter = NSWorkspace.shared.notificationCenter
         wsCenter.addObserver(self, selector: #selector(systemWillSleep), name: NSWorkspace.willSleepNotification, object: nil)
         wsCenter.addObserver(self, selector: #selector(systemDidWake), name: NSWorkspace.didWakeNotification, object: nil)
@@ -63,7 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(triggerShuffleNotificationReceived),
-            name: NSNotification.Name("triggerWallpaperShuffle"),
+            name: .triggerWallpaperShuffle,
             object: nil
         )
     }
@@ -88,16 +74,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func screenUnlocked() {
         print("AppDelegate: Screen unlocked.")
         isScreenLocked = false
-        // Start creating windows at 0.1s — a minimal safety margin so the
-        // lock screen is fully dismissed before our window appears.
-        // The thumbnail overlay handles the image→video transition.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self = self else { return }
             guard !self.isScreenLocked else { return }
             self.updateWallpaperWindows(animated: true)
             
-            // Restart WallpaperAgent AFTER our overlay is fully opaque:
-            // 0.1s start + 0.6s thumbnail hold + 0.7s fade + 0.5s buffer = 1.9s total.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.9) { [weak self] in
                 guard let self = self, !self.isScreenLocked else { return }
                 self.restartWallpaperAgent()
@@ -105,9 +86,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    /// Fired by NSWorkspace BEFORE the system sleeps — earlier than com.apple.screenIsLocked.
-    /// Proactively tear down the desktop overlay so hardware decoders are free
-    /// before the lock screen's WallpaperAgent tries to claim them.
     @objc private func systemWillSleep(_ notification: Notification) {
         print("AppDelegate: System will sleep. Proactively tearing down wallpaper windows.")
         isScreenLocked = true
@@ -116,8 +94,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    /// Fired by NSWorkspace when the system wakes from sleep — complements screenUnlocked
-    /// for lid-open / external display connect scenarios.
     @objc private func systemDidWake(_ notification: Notification) {
         print("AppDelegate: System woke from sleep.")
         guard isScreenLocked else { return }
@@ -132,9 +108,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    /// Kill and restart WallpaperAgent so it re-reads entries.json and initialises a
-    /// fresh lock-screen video session. Must be called AFTER our desktop overlay is
-    /// visible so the brief static-wallpaper flash from WallpaperAgent's restart is hidden.
     private func restartWallpaperAgent() {
         DispatchQueue.global(qos: .background).async {
             let process = Process()
@@ -148,10 +121,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func closeWallpaperWindows() {
         for (_, window) in wallpaperWindows {
-            // Explicitly release all hardware VideoToolbox decoders BEFORE closing.
-            // isReleasedWhenClosed = false means close() hides the window without
-            // triggering deinit, leaving decoders allocated. tearDown() handles
-            // the full release sequence.
             window.tearDown()
             window.close()
         }
@@ -183,11 +152,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Create windows for new screens
         for screen in currentScreens {
             if wallpaperWindows[screen] == nil {
-                // Pass fadeIn: animated so post-unlock windows dissolve in smoothly
                 let window = WallpaperWindow(screen: screen, fadeIn: animated)
                 wallpaperWindows[screen] = window
             } else {
-                // Ensure frame matches screen size
                 wallpaperWindows[screen]?.setFrame(screen.frame, display: true)
             }
         }
@@ -217,29 +184,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         let menu = NSMenu()
-        
         let togglePlayItem = NSMenuItem(title: "Pause", action: #selector(togglePlayback), keyEquivalent: "p")
         menu.addItem(togglePlayItem)
         
         menu.addItem(NSMenuItem.separator())
-        
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openPreferences), keyEquivalent: ","))
-        
         menu.addItem(NSMenuItem.separator())
-        
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
         statusItem?.menu = menu
-        
-        // Update menu items dynamically when opening menu
         menu.delegate = self
     }
     
     @objc private func togglePlayback() {
         NotificationCenter.default.post(name: Notification.Name("manualTogglePlayback"), object: nil)
     }
-    
-    
 
     @objc private func openPreferences() {
         if settingsWindow == nil {
@@ -306,7 +265,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let files = try fileManager.contentsOfDirectory(at: appSupportLibraryDir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
             let videos = files.filter { url in
                 let ext = url.pathExtension.lowercased()
-                return ext == "mp4" || ext == "mov"
+                return ["mp4", "mov", "m4v", "webm", "avi", "mkv"].contains(ext)
             }
             
             guard videos.count > 1 else { return }
@@ -318,8 +277,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let nextWallpaper = choices.randomElement() {
                 print("Shuffle: rotating to next wallpaper: \(nextWallpaper.lastPathComponent)")
                 UserDefaults.standard.set(nextWallpaper.path, forKey: "videoPath")
-                
-                // Post notification
                 NotificationCenter.default.post(name: .wallpaperVideoChanged, object: nil)
             }
         } catch {
@@ -331,10 +288,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 // Delegate to dynamically update menu items
 extension AppDelegate: NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
-    
-        
         if let playItem = menu.item(at: 0) {
-            // Check any of the screens for manual paused state
             let isPaused = wallpaperWindows.values.first?.isManualPaused ?? false
             playItem.title = isPaused ? "Resume" : "Pause"
         }
@@ -344,7 +298,6 @@ extension AppDelegate: NSMenuDelegate {
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         if notification.object as? NSWindow == settingsWindow {
-            // Revert activation policy to .accessory when settings window is closed
             NSApp.setActivationPolicy(.accessory)
         }
     }

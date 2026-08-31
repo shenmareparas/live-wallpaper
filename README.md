@@ -141,21 +141,56 @@ A lightweight, ultra-optimized native macOS menu bar application built in pure *
 
 ```
 live-wallpaper/
-├── main.swift                      # NSApplicationDelegate entrypoint, status bar menu, sleep/lock observers
-├── SettingsView.swift               # SwiftUI Settings & Dashboard panel, Library grid, YouTube downloader
-├── WallpaperWindow.swift           # Borderless desktop overlay window, AVPlayerLayer, occlusion & unlock crossfade
-├── Info.plist                      # Application bundle config (LSUIElement = true for menu-bar stealth mode)
-├── entitlements.plist              # Code signing entitlements and sandbox configuration
-├── build.sh                        # Automated build, asset catalog compilation, and code signing script
-├── make_dmg.sh                     # DMG installer generator wrapping local DMGMaker suite
-├── App Icon.png                    # High-resolution application master icon
-├── AppIcon.icns                    # Multi-resolution macOS icon bundle (16x16 up to 512x512@2x)
-├── Menu Icon.svg                   # Dynamic resolution-independent status bar template icon
-├── Media.xcassets/                 # Xcode Asset Catalog containing template vectors and app icons
-├── project_documentation.md        # Comprehensive internal engineering architecture and technical notes
-└── dmg_maker/                      # Standalone Swift Package for generating glassmorphic installer DMGs
-    ├── Package.swift               # Swift Package Manager manifest
-    └── Sources/DMGMaker/           # DMG generator CLI source code and visual assets
+├── Sources/
+│   ├── App/
+│   │   ├── LiveWallpaperApp.swift          # @main entrypoint & AppKit delegate adaptor
+│   │   └── AppDelegate.swift               # NSStatusItem menu, sleep/lock observers, shuffle timer
+│   ├── Models/
+│   │   ├── WallpaperItem.swift             # Wallpaper library model & YouTube metadata
+│   │   └── EngineState.swift               # Playback status, power state, and telemetry models
+│   ├── Engine/
+│   │   └── WallpaperWindow.swift           # Borderless desktop overlay window, AVPlayerLayer, occlusion & crossfade
+│   ├── Services/
+│   │   ├── WallpaperStoreService.swift     # macOS entries.json dynamic wallpaper store sync
+│   │   ├── VideoTranscodeService.swift     # Hardware-accelerated HEVC transcode & audio stripping
+│   │   ├── YouTubeDownloaderService.swift  # Background video downloader engine (yt-dlp)
+│   │   ├── ThumbnailService.swift          # Asynchronous frame extractor with NSCache memory pooling
+│   │   └── FallbackDesktopService.swift    # CoreGraphics dark-mode instructions bitmap generator
+│   └── Views/
+│       ├── SettingsView.swift              # Main window coordinator & liquid glass sidebar navigation
+│       ├── Dashboard/                      # Real-time engine telemetry, hero preview, and monitor layout
+│       │   ├── DashboardView.swift
+│       │   ├── ActiveWallpaperHeroCard.swift
+│       │   ├── MonitorArrangementView.swift
+│       │   ├── WaveformPulseView.swift
+│       │   └── DiagnosticsMetricsGrid.swift
+│       ├── Wallpaper/                      # Wallpaper library manager & YouTube downloader interface
+│       │   ├── WallpaperSettingsView.swift
+│       │   ├── WallpaperLibraryCard.swift
+│       │   └── YouTubeDownloaderSection.swift
+│       ├── Settings/                       # Speed sliders, crossfade presets & auto-shuffle timers
+│       │   └── EngineSettingsView.swift
+│       ├── About/                          # Versioning, author credits & GitHub links
+│       │   └── AboutView.swift
+│       └── Components/                     # Reusable glassmorphic UI primitives & notifications
+│           ├── VisualEffectView.swift
+│           ├── TabButton.swift
+│           ├── CustomCorners.swift
+│           └── NotificationNames.swift
+├── Resources/
+│   ├── Info.plist                          # Application bundle configuration (LSUIElement = true)
+│   ├── entitlements.plist                  # Code signing entitlements
+│   ├── AppIcon.icns                        # Multi-resolution macOS icon bundle
+│   ├── App Icon.png                        # Master application icon
+│   ├── Menu Icon.svg                       # Dynamic vector status menu template icon
+│   └── Media.xcassets/                     # Xcode Asset Catalog containing compiled assets
+├── scripts/
+│   ├── build.sh                            # Main recursive build and signing script
+│   └── make_dmg.sh                         # DMG packaging script
+├── build.sh                                # Root convenience wrapper calling scripts/build.sh
+├── make_dmg.sh                             # Root convenience wrapper calling scripts/make_dmg.sh
+├── project_documentation.md                # Detailed internal engineering architecture notes
+└── dmg_maker/                              # Standalone Swift Package for generating installer DMGs
 ```
 
 ---
