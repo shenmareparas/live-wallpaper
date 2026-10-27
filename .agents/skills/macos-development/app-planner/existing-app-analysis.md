@@ -16,11 +16,11 @@ Create 10 comprehensive analysis documents for existing apps.
 - Code duplication
 - Design patterns used
 
-## 3. UI/UX Tahoe Compatibility
+## 3. UI/UX Tahoe and Golden Gate Compatibility
 
 - Liquid Glass adoption
 - HIG compliance
-- macOS 26 features used
+- macOS 26 / macOS 27 features used
 - Accessibility status
 
 ## 4. Data Layer Analysis

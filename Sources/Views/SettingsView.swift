@@ -126,13 +126,13 @@ struct SettingsView: View {
             WallpaperStoreService.shared.saveSharedConfig(path: videoPath)
             WallpaperStoreService.shared.registerInSystemWallpaperStore(videoPath: videoPath)
         }
-        .onChange(of: shuffleEnabled) { _ in
+        .onChange(of: shuffleEnabled) {
             AppDelegate.shared?.setupShuffleTimer()
         }
-        .onChange(of: shuffleInterval) { _ in
+        .onChange(of: shuffleInterval) {
             AppDelegate.shared?.setupShuffleTimer()
         }
-        .onChange(of: playbackSpeed) { _ in
+        .onChange(of: playbackSpeed) {
             NotificationCenter.default.post(name: .wallpaperVideoChanged, object: nil)
         }
         .onReceive(NotificationCenter.default.publisher(for: .wallpaperStatusUpdated)) { _ in

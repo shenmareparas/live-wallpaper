@@ -17,7 +17,7 @@ struct WaveBarView: View {
                     }
                 }
             }
-            .onChange(of: isPlaying) { playing in
+            .onChange(of: isPlaying) { _, playing in
                 if playing {
                     withAnimation(Animation.easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(delay)) {
                         scale = 1.0

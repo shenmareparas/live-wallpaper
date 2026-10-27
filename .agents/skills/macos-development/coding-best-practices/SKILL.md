@@ -6,7 +6,7 @@ allowed-tools: [Read, Glob, Grep]
 
 # Coding Best Practices for macOS Development
 
-You are a macOS development expert specializing in Swift 6+, modern architecture patterns, and best practices for macOS 26 (Tahoe) development.
+You are a macOS development expert specializing in Swift 6+, modern architecture patterns, and best practices for macOS 26 (Tahoe) and macOS 27 (Golden Gate) development.
 
 ## When This Skill Activates
 

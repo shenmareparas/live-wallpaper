@@ -64,23 +64,35 @@ final class VideoTranscodeService {
     
     func convertMP4ToQuickTimeMOV(sourceURL: URL, destinationURL: URL, completion: @escaping (Bool) -> Void) {
         let asset = AVAsset(url: sourceURL)
-        
-        // Strip audio tracks completely before transcoding
-        let composition = AVMutableComposition()
-        if let videoTrack = asset.tracks(withMediaType: .video).first,
-           let compositionVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) {
-            try? compositionVideoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: asset.duration), of: videoTrack, at: .zero)
-            compositionVideoTrack.preferredTransform = videoTrack.preferredTransform
-            
-            // Remove destination if it exists to avoid collisions
-            try? FileManager.default.removeItem(at: destinationURL)
-            
-            // Directly transcode to HEVC (H.265) using the video-only composition
-            self.transcodeToHEVC(asset: composition, destinationURL: destinationURL, completion: completion)
-        } else {
-            // Fallback if no video tracks found
-            try? FileManager.default.removeItem(at: destinationURL)
-            self.transcodeToHEVC(asset: asset, destinationURL: destinationURL, completion: completion)
+        Task {
+            do {
+                // Strip audio tracks completely before transcoding using modern async AVFoundation APIs
+                let tracks = try await asset.loadTracks(withMediaType: .video)
+                if let videoTrack = tracks.first {
+                    let composition = AVMutableComposition()
+                    if let compositionVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) {
+                        let duration = try await asset.load(.duration)
+                        let transform = try await videoTrack.load(.preferredTransform)
+                        try compositionVideoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: videoTrack, at: .zero)
+                        compositionVideoTrack.preferredTransform = transform
+                        
+                        // Remove destination if it exists to avoid collisions
+                        try? FileManager.default.removeItem(at: destinationURL)
+                        
+                        // Directly transcode to HEVC (H.265) using the video-only composition
+                        self.transcodeToHEVC(asset: composition, destinationURL: destinationURL, completion: completion)
+                        return
+                    }
+                }
+                
+                // Fallback if no video tracks found
+                try? FileManager.default.removeItem(at: destinationURL)
+                self.transcodeToHEVC(asset: asset, destinationURL: destinationURL, completion: completion)
+            } catch {
+                print("Failed to load video properties for transcoding: \(error)")
+                try? FileManager.default.removeItem(at: destinationURL)
+                self.transcodeToHEVC(asset: asset, destinationURL: destinationURL, completion: completion)
+            }
         }
     }
     

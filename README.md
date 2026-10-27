@@ -58,9 +58,9 @@ A lightweight, ultra-optimized native macOS menu bar application built in pure *
     -   Listens to `NSWorkspace.willSleepNotification` *before* the display sleeps to proactively invoke `tearDown()` and unbind VideoToolbox hardware decoders before macOS WallpaperAgent initializes the lock screen player.
     -   Guards all `CATransaction` completion blocks with `isTornDown` flags to prevent memory leaks and zombie decoder callbacks on rapid lock/unlock cycles.
 -   **Hardware-Accelerated HEVC (H.265) Transcoding**:
-    -   Forces background conversion of non-compliant formats to `AVAssetExportPresetHEVCDeliverable` HEVC video streams, ensuring full compatibility with Apple Silicon hardware video decoders and macOS Tahoe lock screen requirements.
--   **Gapless Looping with Pure Video Composition**:
-    -   Initializes `AVQueuePlayer` and `AVPlayerLooper` with video-only `AVMutableComposition` tracks, stripping all audio pipelines to prevent hardware audio clock synchronization pauses at loop boundaries.
+    -   Forces background conversion of non-compliant formats to `AVAssetExportPresetHEVCDeliverable` HEVC video streams, ensuring full compatibility with Apple Silicon hardware video decoders and macOS Tahoe / macOS 27 (Golden Gate) lock screen requirements.
+-   **Gapless Looping with Modern Async Video Composition**:
+    -   Initializes `AVQueuePlayer` and `AVPlayerLooper` with video-only `AVMutableComposition` tracks, stripping all audio pipelines using modern asynchronous `AVAsset` property loaders (`loadTracks`, `load(.duration)`, `load(.preferredTransform)`) to prevent hardware audio clock synchronization pauses and decoder stalls.
 -   **Intelligent Occlusion & Power Saver**:
     -   **Window Occlusion Detection**: Polls window levels (`kCGWindowListOptionOnScreenOnly`) to detect when the desktop is completely covered by full-screen apps or maximized windows, automatically pausing playback to drop CPU/GPU usage to 0%.
     -   **Low Power Mode Detection**: Subscribes to `ProcessInfo.processInfo.isLowPowerModeEnabled` and pauses playback when battery saving is active.
@@ -102,7 +102,7 @@ A lightweight, ultra-optimized native macOS menu bar application built in pure *
 
 ### Prerequisites
 
--   macOS 14.0 (Sonoma), macOS 15.0 (Sequoia), or macOS 26.0 (Tahoe)
+-   macOS 14.0 (Sonoma), macOS 15.0 (Sequoia), macOS 26.0 (Tahoe), or macOS 27.0 (Golden Gate)
 -   Xcode 15.0+ or Apple Command Line Tools (`swiftc` 6.0+)
 -   *(Optional)* `yt-dlp` and `ffmpeg` installed for YouTube downloading capabilities (`brew install yt-dlp ffmpeg`)
 
@@ -208,7 +208,10 @@ live-wallpaper/
 │   └── make_dmg.sh                         # DMG packaging script
 ├── build.sh                                # Root convenience wrapper calling scripts/build.sh
 ├── make_dmg.sh                             # Root convenience wrapper calling scripts/make_dmg.sh
-├── project_documentation.md                # Detailed internal engineering architecture notes
+├── .agents/
+│   ├── agents.md                           # AI agent guidelines, rules, and technical invariants
+│   ├── projectcontext.md                   # Detailed internal engineering architecture notes
+│   └── skills/                             # Agent skills and macOS development knowledge modules
 └── dmg_maker/                              # Standalone Swift Package for generating installer DMGs
 ```
 

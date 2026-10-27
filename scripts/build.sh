@@ -17,10 +17,16 @@ mkdir -p LiveWallpaper.app/Contents/Resources
 SWIFT_FILES=$(find Sources -name "*.swift" -type f)
 
 # Select compatible SDK
-if [ -d "/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk" ]; then
+if [ -n "$SDKROOT" ]; then
+    SDK_PATH="$SDKROOT"
+elif xcrun --show-sdk-path --sdk macosx >/dev/null 2>&1; then
+    SDK_PATH=$(xcrun --show-sdk-path --sdk macosx)
+elif [ -d "/Library/Developer/CommandLineTools/SDKs/MacOSX27.sdk" ]; then
+    SDK_PATH="/Library/Developer/CommandLineTools/SDKs/MacOSX27.sdk"
+elif [ -d "/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk" ]; then
     SDK_PATH="/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk"
 else
-    SDK_PATH=$(xcrun --show-sdk-path --sdk macosx)
+    SDK_PATH="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
 fi
 echo "Using SDK: $SDK_PATH"
 

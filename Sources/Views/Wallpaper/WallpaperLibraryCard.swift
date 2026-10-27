@@ -131,7 +131,7 @@ struct WallpaperLibraryCard: View {
         .onAppear {
             loadMetadataAndThumbnail()
         }
-        .onChange(of: url) { _ in
+        .onChange(of: url) {
             loadMetadataAndThumbnail()
         }
     }

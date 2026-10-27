@@ -210,8 +210,8 @@ struct EngineSettingsView: View {
                     Toggle("", isOn: $launchAtLogin)
                         .labelsHidden()
                         .toggleStyle(.switch)
-                        .onChange(of: launchAtLogin) { _ in
-                            toggleLaunchAtLogin(launchAtLogin)
+                        .onChange(of: launchAtLogin) { _, newValue in
+                            toggleLaunchAtLogin(newValue)
                         }
                 }
             }

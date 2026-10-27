@@ -18,6 +18,7 @@ class WallpaperWindow: NSWindow {
     /// Set to true once tearDown() has been called. Guards against CATransaction
     /// completion blocks firing after the player has already been destroyed.
     private var isTornDown = false
+    private var setupPlayerTask: Task<Void, Never>?
 
     /// Holds the first-frame PNG shown during the image→video transition on unlock.
     private var thumbnailLayer: CALayer?
@@ -38,6 +39,9 @@ class WallpaperWindow: NSWindow {
     func tearDown() {
         guard !isTornDown else { return }
         isTornDown = true
+
+        setupPlayerTask?.cancel()
+        setupPlayerTask = nil
 
         timer?.invalidate()
         timer = nil
@@ -162,6 +166,8 @@ class WallpaperWindow: NSWindow {
     }
 
     private func setupPlayer(frame: NSRect) {
+        setupPlayerTask?.cancel()
+        
         var videoURL: URL?
         
         // Load custom video if set
@@ -186,96 +192,110 @@ class WallpaperWindow: NSWindow {
         self.orderFrontRegardless()
         
         let asset = AVURLAsset(url: finalVideoURL)
-        let playerItem: AVPlayerItem
         
-        // Strip audio tracks completely for seamless, gapless looping
-        let composition = AVMutableComposition()
-        if let videoTrack = asset.tracks(withMediaType: .video).first,
-           let compositionVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) {
-            try? compositionVideoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: asset.duration), of: videoTrack, at: .zero)
-            compositionVideoTrack.preferredTransform = videoTrack.preferredTransform
-            playerItem = AVPlayerItem(asset: composition)
-        } else {
-            playerItem = AVPlayerItem(asset: asset)
-        }
-        
-        let queuePlayer = AVQueuePlayer()
-        queuePlayer.isMuted = true
-        
-        let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
-        
-        let newLayer = AVPlayerLayer(player: queuePlayer)
-        newLayer.frame = NSRect(origin: .zero, size: frame.size)
-        newLayer.videoGravity = .resizeAspectFill
-        
-        if self.contentView == nil {
-            let contentView = NSView(frame: frame)
-            contentView.wantsLayer = true
-            self.contentView = contentView
-        }
-        
-        // If we already have a player playing, perform a cross-fade transition
-        let transitionDuration = UserDefaults.standard.double(forKey: "transitionDuration")
-        let actualDuration = transitionDuration > 0 ? transitionDuration : 0.5
-        
-        if let oldLayer = currentPlayerLayer, let oldPlayer = currentPlayer {
-            newLayer.opacity = 0.0
-            self.contentView?.layer?.addSublayer(newLayer)
+        setupPlayerTask = Task { @MainActor [weak self] in
+            guard let self = self, !self.isTornDown else { return }
             
-            let speed = UserDefaults.standard.double(forKey: "playbackSpeed")
-            let actualSpeed = speed > 0 ? Float(speed) : 1.0
+            let playerItem: AVPlayerItem
+            let composition = AVMutableComposition()
             
-            if !isLowPowerModeActive && !isObscured && !isManualPaused {
-                queuePlayer.play()
-                queuePlayer.rate = actualSpeed
+            do {
+                // Strip audio tracks completely using modern async AVFoundation APIs
+                let tracks = try await asset.loadTracks(withMediaType: .video)
+                if let videoTrack = tracks.first,
+                   let compositionVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) {
+                    let duration = try await asset.load(.duration)
+                    let transform = try await videoTrack.load(.preferredTransform)
+                    try compositionVideoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: videoTrack, at: .zero)
+                    compositionVideoTrack.preferredTransform = transform
+                    playerItem = AVPlayerItem(asset: composition)
+                } else {
+                    playerItem = AVPlayerItem(asset: asset)
+                }
+            } catch {
+                playerItem = AVPlayerItem(asset: asset)
             }
             
-            CATransaction.begin()
-            CATransaction.setAnimationDuration(actualDuration)
-            CATransaction.setCompletionBlock { [weak self] in
-                guard let self = self, !self.isTornDown else { return }
-                self.cleanUpOldPlayer(oldPlayer, layer: oldLayer)
+            guard !Task.isCancelled, !self.isTornDown else { return }
+            
+            let queuePlayer = AVQueuePlayer()
+            queuePlayer.isMuted = true
+            
+            let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
+            
+            let newLayer = AVPlayerLayer(player: queuePlayer)
+            newLayer.frame = NSRect(origin: .zero, size: frame.size)
+            newLayer.videoGravity = .resizeAspectFill
+            
+            if self.contentView == nil {
+                let contentView = NSView(frame: frame)
+                contentView.wantsLayer = true
+                self.contentView = contentView
             }
             
-            let fadeIn = CABasicAnimation(keyPath: "opacity")
-            fadeIn.fromValue = 0.0
-            fadeIn.toValue = 1.0
-            fadeIn.duration = actualDuration
-            fadeIn.fillMode = .forwards
-            fadeIn.isRemovedOnCompletion = false
-            newLayer.add(fadeIn, forKey: "fadeIn")
-            newLayer.opacity = 1.0
+            // If we already have a player playing, perform a cross-fade transition
+            let transitionDuration = UserDefaults.standard.double(forKey: "transitionDuration")
+            let actualDuration = transitionDuration > 0 ? transitionDuration : 0.5
             
-            let fadeOut = CABasicAnimation(keyPath: "opacity")
-            fadeOut.fromValue = 1.0
-            fadeOut.toValue = 0.0
-            fadeOut.duration = actualDuration
-            fadeOut.fillMode = .forwards
-            fadeOut.isRemovedOnCompletion = false
-            oldLayer.add(fadeOut, forKey: "fadeOut")
-            oldLayer.opacity = 0.0
-            
-            CATransaction.commit()
-        } else {
-            self.contentView?.layer?.addSublayer(newLayer)
-            let speed = UserDefaults.standard.double(forKey: "playbackSpeed")
-            let actualSpeed = speed > 0 ? Float(speed) : 1.0
-            
-            if !isLowPowerModeActive && !isObscured && !isManualPaused {
-                queuePlayer.play()
-                queuePlayer.rate = actualSpeed
+            if let oldLayer = self.currentPlayerLayer, let oldPlayer = self.currentPlayer {
+                newLayer.opacity = 0.0
+                self.contentView?.layer?.addSublayer(newLayer)
+                
+                let speed = UserDefaults.standard.double(forKey: "playbackSpeed")
+                let actualSpeed = speed > 0 ? Float(speed) : 1.0
+                
+                if !self.isLowPowerModeActive && !self.isObscured && !self.isManualPaused {
+                    queuePlayer.play()
+                    queuePlayer.rate = actualSpeed
+                }
+                
+                CATransaction.begin()
+                CATransaction.setAnimationDuration(actualDuration)
+                CATransaction.setCompletionBlock { [weak self] in
+                    guard let self = self, !self.isTornDown else { return }
+                    self.cleanUpOldPlayer(oldPlayer, layer: oldLayer)
+                }
+                
+                let fadeIn = CABasicAnimation(keyPath: "opacity")
+                fadeIn.fromValue = 0.0
+                fadeIn.toValue = 1.0
+                fadeIn.duration = actualDuration
+                fadeIn.fillMode = .forwards
+                fadeIn.isRemovedOnCompletion = false
+                newLayer.add(fadeIn, forKey: "fadeIn")
+                newLayer.opacity = 1.0
+                
+                let fadeOut = CABasicAnimation(keyPath: "opacity")
+                fadeOut.fromValue = 1.0
+                fadeOut.toValue = 0.0
+                fadeOut.duration = actualDuration
+                fadeOut.fillMode = .forwards
+                fadeOut.isRemovedOnCompletion = false
+                oldLayer.add(fadeOut, forKey: "fadeOut")
+                oldLayer.opacity = 0.0
+                
+                CATransaction.commit()
+            } else {
+                self.contentView?.layer?.addSublayer(newLayer)
+                let speed = UserDefaults.standard.double(forKey: "playbackSpeed")
+                let actualSpeed = speed > 0 ? Float(speed) : 1.0
+                
+                if !self.isLowPowerModeActive && !self.isObscured && !self.isManualPaused {
+                    queuePlayer.play()
+                    queuePlayer.rate = actualSpeed
+                }
             }
+            
+            self.currentPlayer = queuePlayer
+            self.currentLooper = looper
+            self.currentPlayerLayer = newLayer
+            
+            if self.targetScreen == NSScreen.main {
+                self.syncLockScreenWallpaper(videoURL: finalVideoURL)
+            }
+            
+            self.updatePlaybackState()
         }
-        
-        self.currentPlayer = queuePlayer
-        self.currentLooper = looper
-        self.currentPlayerLayer = newLayer
-        
-        if targetScreen == NSScreen.main {
-            syncLockScreenWallpaper(videoURL: finalVideoURL)
-        }
-        
-        updatePlaybackState()
     }
     
     private func cleanUpOldPlayer(_ oldPlayer: AVQueuePlayer?, layer: AVPlayerLayer?) {

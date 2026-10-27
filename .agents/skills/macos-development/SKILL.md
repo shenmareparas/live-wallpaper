@@ -1,6 +1,6 @@
 ---
 name: macos-development
-description: Comprehensive macOS development guidance including Swift 6+, SwiftUI, SwiftData, architecture patterns, AppKit bridging, and macOS 26 Tahoe APIs. Use for macOS code review, best practices, UI review, or platform-specific features.
+description: Comprehensive macOS development guidance including Swift 6+, SwiftUI, SwiftData, architecture patterns, AppKit bridging, and macOS 26 Tahoe / macOS 27 Golden Gate APIs. Use for macOS code review, best practices, UI review, or platform-specific features.
 allowed-tools: [Read, Glob, Grep, WebFetch]
 ---
 
@@ -14,7 +14,7 @@ Use this skill when the user:
 - Asks about macOS development best practices
 - Wants code review for macOS/Swift projects
 - Needs help with SwiftUI, SwiftData, or AppKit
-- Is implementing macOS 26 (Tahoe) features
+- Is implementing macOS 26 (Tahoe) or macOS 27 (Golden Gate) features
 - Wants UI/UX review against HIG
 - Needs architecture guidance for macOS apps
 
@@ -43,12 +43,14 @@ SwiftData deep dive.
 - `performance.md` - Optimization techniques
 
 ### macos-tahoe-apis/
-macOS 26 specific features.
-- `tahoe-features.md` - New macOS 26 capabilities
+macOS 26 (Tahoe) and macOS 27 (Golden Gate) specific features.
+- `golden-gate-features.md` - macOS 27 capabilities and WallpaperAgent integration
+- `tahoe-features.md` - macOS 26 capabilities
 - `apple-intelligence.md` - AI/ML integration
 - `mlx-framework.md` - On-device ML with MLX
 - `continuity.md` - Cross-device features
 - `xcode16.md` - Xcode 16 tools and features
+- `xcode27.md` - Xcode 27 and Swift 6.4 toolchain
 
 ### macos-capabilities/
 Platform integration.
