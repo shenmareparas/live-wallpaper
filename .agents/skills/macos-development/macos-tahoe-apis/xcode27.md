@@ -36,6 +36,6 @@ Swift macros (e.g., `@Observable`, `@State`, `#Preview`) run as out-of-process p
 ## Deployment Target Best Practices
 
 When targeting modern macOS versions with legacy compatibility:
-* Minimum deployment target: `-target arm64-apple-macos14.0` (supports Sonoma, Sequoia, Tahoe, and Golden Gate).
-* Use `#available(macOS 27.0, *)` guards for newly introduced platform-specific APIs.
 
+- Minimum deployment target: `-target arm64-apple-macos14.0` (supports Sonoma, Sequoia, Tahoe, and Golden Gate).
+- Use `#available(macOS 27.0, *)` guards for newly introduced platform-specific APIs.

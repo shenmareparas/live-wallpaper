@@ -145,4 +145,3 @@ Suggested queries:
 - `site:developer.apple.com macOS 27 release notes AppKit SwiftUI design`
 
 Search first, then fetch the exact primary pages. For an exhaustive refresh, use more than ten distinct searches, read at least 25 distinct relevant sources, record URLs and dates, and separate direct source statements from synthesis.
-

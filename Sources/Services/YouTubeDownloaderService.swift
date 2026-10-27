@@ -6,14 +6,26 @@ final class YouTubeDownloaderService {
     private init() {}
     
     func locateYTDLP() -> String? {
+        let fm = FileManager.default
+
+        // 1. Check in the application bundle's auxiliary executables (Contents/MacOS/yt-dlp)
+        if let bundleExecPath = Bundle.main.path(forAuxiliaryExecutable: "yt-dlp"), fm.isExecutableFile(atPath: bundleExecPath) {
+            return bundleExecPath
+        }
+
+        // 2. Check in the application bundle's Resources directory
+        if let resourcePath = Bundle.main.path(forResource: "yt-dlp", ofType: nil), fm.isExecutableFile(atPath: resourcePath) {
+            return resourcePath
+        }
+
+        // 3. Fallback to common system installation paths
         let paths = [
             "/opt/homebrew/bin/yt-dlp",
             "/usr/local/bin/yt-dlp",
             "/Library/Frameworks/Python.framework/Versions/3.12/bin/yt-dlp"
         ]
-        let fm = FileManager.default
         for path in paths {
-            if fm.fileExists(atPath: path) {
+            if fm.isExecutableFile(atPath: path) {
                 return path
             }
         }
@@ -28,7 +40,7 @@ final class YouTubeDownloaderService {
         
         if process.terminationStatus == 0 {
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let path = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !path.isEmpty {
+            if let path = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !path.isEmpty, fm.isExecutableFile(atPath: path) {
                 return path
             }
         }
@@ -48,7 +60,7 @@ final class YouTubeDownloaderService {
         }
         
         guard let ytDlpPath = locateYTDLP() else {
-            onCompletion(.failure(NSError(domain: "YouTubeDownloader", code: 2, userInfo: [NSLocalizedDescriptionKey: "yt-dlp not found. Please install it via Homebrew: brew install yt-dlp"])))
+            onCompletion(.failure(NSError(domain: "YouTubeDownloader", code: 2, userInfo: [NSLocalizedDescriptionKey: "yt-dlp is not available. Please reinstall Live Wallpaper or install yt-dlp via Homebrew: brew install yt-dlp"])))
             return
         }
         

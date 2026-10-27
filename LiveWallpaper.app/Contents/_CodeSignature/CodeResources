@@ -19,6 +19,15 @@
 	</dict>
 	<key>files2</key>
 	<dict>
+		<key>MacOS/yt-dlp</key>
+		<dict>
+			<key>cdhash</key>
+			<data>
+			8HF0gqmmRxvVrmXj1zAfpnJGEOo=
+			</data>
+			<key>requirement</key>
+			<string>cdhash H"f0717482a9a6471bd5ae65e3d7301fa6724610ea"</string>
+		</dict>
 		<key>Resources/AppIcon.icns</key>
 		<dict>
 			<key>hash2</key>

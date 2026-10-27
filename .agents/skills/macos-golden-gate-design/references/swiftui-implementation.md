@@ -212,4 +212,3 @@ For an existing app:
 - Does every availability-gated API exist in the current SDK?
 - Does the app stay clear with transparency reduced?
 - Does resizing preserve the pane hierarchy without turning it into stacked cards?
-

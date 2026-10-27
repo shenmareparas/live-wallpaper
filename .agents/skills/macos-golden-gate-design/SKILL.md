@@ -139,4 +139,3 @@ For implementation work, make the changes, build or type-check them, inspect the
 - Read `references/design-patterns.md` for the visual system, anti-box rules, component patterns, and Figma observations.
 - Read `references/swiftui-implementation.md` for native SwiftUI/AppKit construction and migration guidance.
 - Read `references/sources.md` to refresh Apple documentation and inspect the official Figma kit.
-

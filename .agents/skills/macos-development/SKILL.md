@@ -11,6 +11,7 @@ Comprehensive guidance for macOS app development. This skill aggregates speciali
 ## When This Skill Activates
 
 Use this skill when the user:
+
 - Asks about macOS development best practices
 - Wants code review for macOS/Swift projects
 - Needs help with SwiftUI, SwiftData, or AppKit
@@ -23,7 +24,9 @@ Use this skill when the user:
 Read relevant module files based on the user's needs:
 
 ### coding-best-practices/
+
 Swift 6+ code quality and modern idioms.
+
 - `swift-language.md` - Modern Swift patterns
 - `modern-concurrency.md` - async/await, actors, Sendable
 - `data-persistence.md` - SwiftData, UserDefaults, Keychain
@@ -31,19 +34,25 @@ Swift 6+ code quality and modern idioms.
 - `architecture-principles.md` - Clean architecture patterns
 
 ### architecture-patterns/
+
 Software design and architecture.
+
 - `solid-detailed.md` - SOLID principles with Swift examples
 - `design-patterns.md` - Common design patterns
 - `modular-design.md` - Modular architecture approaches
 
 ### swiftdata-architecture/
+
 SwiftData deep dive.
+
 - `schema-design.md` - Model design and relationships
 - `query-patterns.md` - Efficient queries and predicates
 - `performance.md` - Optimization techniques
 
 ### macos-tahoe-apis/
+
 macOS 26 (Tahoe) and macOS 27 (Golden Gate) specific features.
+
 - `golden-gate-features.md` - macOS 27 capabilities and WallpaperAgent integration
 - `tahoe-features.md` - macOS 26 capabilities
 - `apple-intelligence.md` - AI/ML integration
@@ -53,23 +62,31 @@ macOS 26 (Tahoe) and macOS 27 (Golden Gate) specific features.
 - `xcode27.md` - Xcode 27 and Swift 6.4 toolchain
 
 ### macos-capabilities/
+
 Platform integration.
+
 - `sandboxing.md` - App Sandbox and entitlements
 - System integration features
 
 ### appkit-swiftui-bridge/
+
 Hybrid development.
+
 - `nsviewrepresentable.md` - Wrapping AppKit views
 - State management between frameworks
 
 ### ui-review-tahoe/
+
 UI/UX review for macOS 26.
+
 - Liquid Glass design system
 - HIG compliance checking
 - Accessibility review
 
 ### app-planner/
+
 Project planning and analysis.
+
 - New app architecture planning
 - Existing app audits
 
@@ -83,6 +100,7 @@ Project planning and analysis.
 ## Example Workflow
 
 **User asks about SwiftData performance:**
+
 1. Read `swiftdata-architecture/performance.md`
 2. Read `swiftdata-architecture/query-patterns.md` if relevant
 3. Apply recommendations to their code

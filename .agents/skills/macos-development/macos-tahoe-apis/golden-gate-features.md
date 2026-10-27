@@ -8,16 +8,16 @@ macOS 27 (Golden Gate) continues the aerial video wallpaper architecture introdu
 
 ### Key Directory Locations
 
-* User aerial database: `~/Library/Application Support/com.apple.wallpaper/aerials/`
-* Video storage: `~/Library/Application Support/com.apple.wallpaper/aerials/videos/`
-* Thumbnail cache: `~/Library/Application Support/com.apple.wallpaper/aerials/thumbnails/`
-* Manifest file: `~/Library/Application Support/com.apple.wallpaper/aerials/manifest/entries.json`
+- User aerial database: `~/Library/Application Support/com.apple.wallpaper/aerials/`
+- Video storage: `~/Library/Application Support/com.apple.wallpaper/aerials/videos/`
+- Thumbnail cache: `~/Library/Application Support/com.apple.wallpaper/aerials/thumbnails/`
+- Manifest file: `~/Library/Application Support/com.apple.wallpaper/aerials/manifest/entries.json`
 
 ### Hardware Decoder Requirements
 
-* Native secure lock-screen decoders require Apple Silicon hardware-accelerated HEVC (H.265 `hvc1` codec) QuickTime `.mov` files.
-* H.264 video streams or non-HEVC formats can cause black screen lock-screen failures. Use `AVAssetExportPresetHEVCDeliverable` for transcoding.
-* Transparent window overlays and VideoToolbox sessions must proactively clean up decoders before display sleep via `NSWorkspace.willSleepNotification`.
+- Native secure lock-screen decoders require Apple Silicon hardware-accelerated HEVC (H.265 `hvc1` codec) QuickTime `.mov` files.
+- H.264 video streams or non-HEVC formats can cause black screen lock-screen failures. Use `AVAssetExportPresetHEVCDeliverable` for transcoding.
+- Transparent window overlays and VideoToolbox sessions must proactively clean up decoders before display sleep via `NSWorkspace.willSleepNotification`.
 
 ### WallpaperAgent Process Synchronization
 
@@ -39,9 +39,9 @@ func restartWallpaperAgent() {
 
 ## Modern Window Management and Leveling
 
-* Desktop window layering uses `NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)))`.
-* Collection behaviors should include `.canJoinAllSpaces`, `.stationary`, `.ignoresCycle`, and `.canJoinAllApplications`.
-* Avoid calling `NSWorkspace.shared.setDesktopImageURL` during runtime as it overwrites WallpaperAgent video preferences.
+- Desktop window layering uses `NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)))`.
+- Collection behaviors should include `.canJoinAllSpaces`, `.stationary`, `.ignoresCycle`, and `.canJoinAllApplications`.
+- Avoid calling `NSWorkspace.shared.setDesktopImageURL` during runtime as it overwrites WallpaperAgent video preferences.
 
 ## SwiftUI Updates for macOS 27
 
@@ -75,4 +75,3 @@ final class WallpaperEngineState {
     var currentSpeed: Double = 1.0
 }
 ```
-

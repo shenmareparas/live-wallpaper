@@ -246,22 +246,21 @@ The important pattern is:
 
 ## Correction map
 
-| If the design has… | Change it to… |
-| --- | --- |
-| rounded inner app shell | content and panes directly in the system window |
-| inset sidebar card | full-height source-list pane and shared divider |
-| card around every section | spacing, heading, native section, or separator |
-| glass behind every block | native glass on navigation, commands, and transient UI |
-| pill around every toolbar icon | a small number of native task groups |
-| floating inspector by default | adjacent inspector pane |
-| dashboard tiles around a table | one native table with rows and columns |
-| custom title banner | native window title and toolbar |
-| fixed blur/opacity recipe | adaptive semantic system material |
-| light-mode-only mockup | light, dark, inactive, tinted, reduced-transparency, and resized states |
+| If the design has…             | Change it to…                                                           |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| rounded inner app shell        | content and panes directly in the system window                         |
+| inset sidebar card             | full-height source-list pane and shared divider                         |
+| card around every section      | spacing, heading, native section, or separator                          |
+| glass behind every block       | native glass on navigation, commands, and transient UI                  |
+| pill around every toolbar icon | a small number of native task groups                                    |
+| floating inspector by default  | adjacent inspector pane                                                 |
+| dashboard tiles around a table | one native table with rows and columns                                  |
+| custom title banner            | native window title and toolbar                                         |
+| fixed blur/opacity recipe      | adaptive semantic system material                                       |
+| light-mode-only mockup         | light, dark, inactive, tinted, reduced-transparency, and resized states |
 
 ## Final visual question
 
 Ask: "If I remove the decorative radii, strokes, and shadows, does the interface still have a clear native hierarchy?"
 
 If no, the structure is unresolved. Fix pane and component hierarchy before adding material.
-

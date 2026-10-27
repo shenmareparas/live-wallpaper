@@ -45,7 +45,26 @@ else
     echo "actool not found in active toolchain, skipping asset catalog compilation."
 fi
 
-# Code sign the binary (Sandbox disabled)
+# Bundle standalone yt-dlp binary if available, or download it if missing
+if [ ! -f "Resources/bin/yt-dlp" ]; then
+    echo "yt-dlp binary not found in Resources/bin. Attempting to download..."
+    if [ -x "scripts/download_ytdlp.sh" ]; then
+        ./scripts/download_ytdlp.sh || echo "Warning: Could not download yt-dlp automatically. Building without bundled yt-dlp."
+    fi
+fi
+
+if [ -f "Resources/bin/yt-dlp" ]; then
+    echo "Bundling Apple Silicon (arm64) yt-dlp into LiveWallpaper.app/Contents/MacOS/..."
+    if lipo -info "Resources/bin/yt-dlp" 2>/dev/null | grep -q "x86_64"; then
+        lipo -thin arm64 "Resources/bin/yt-dlp" -output "LiveWallpaper.app/Contents/MacOS/yt-dlp"
+    else
+        cp "Resources/bin/yt-dlp" "LiveWallpaper.app/Contents/MacOS/yt-dlp"
+    fi
+    chmod +x "LiveWallpaper.app/Contents/MacOS/yt-dlp"
+    /usr/bin/codesign -s - --force "LiveWallpaper.app/Contents/MacOS/yt-dlp"
+fi
+
+# Code sign the main binary (Sandbox disabled)
 /usr/bin/codesign -s - --force LiveWallpaper.app/Contents/MacOS/LiveWallpaper
 
 echo "Build complete! Running 'open LiveWallpaper.app' to launch."
