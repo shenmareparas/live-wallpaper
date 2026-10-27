@@ -204,25 +204,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsWindow == nil {
             let settingsView = SettingsView()
             let hostingController = NSHostingController(rootView: settingsView)
-            hostingController.safeAreaRegions = []
             
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 760, height: 540),
-                styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+                contentRect: NSRect(x: 0, y: 0, width: 840, height: 560),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
             window.center()
-            window.title = "Settings"
-            window.titlebarAppearsTransparent = true
-            window.titleVisibility = .hidden
+            window.title = "Live Wallpaper"
+            window.titlebarSeparatorStyle = .automatic
+            window.toolbarStyle = .unified
             window.hasShadow = true
             window.contentViewController = hostingController
             window.isReleasedWhenClosed = false
             window.collectionBehavior = [.moveToActiveSpace]
             window.delegate = self
-            window.contentMinSize = NSSize(width: 760, height: 540)
-            window.contentMaxSize = NSSize(width: 760, height: 540)
+            window.contentMinSize = NSSize(width: 720, height: 480)
+            window.setFrameAutosaveName("LiveWallpaperSettingsWindow")
             self.settingsWindow = window
         }
         

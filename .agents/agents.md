@@ -43,12 +43,20 @@ Failing to follow this teardown order causes VideoToolbox surface leaks and lock
 ### SwiftUI Modern Patterns
 * **Zero or Two-Argument `.onChange`**: Avoid deprecated single-argument `.onChange(of:perform:)`. Use `.onChange(of: value) { }` or `.onChange(of: value) { oldValue, newValue in }`.
 
+### macOS 27 Golden Gate UI and Window Architecture
+* **Unified One-Window Composition**: Maintain a zero card budget. The system window is the container—do not wrap views in artificial app shells or nested `.ultraThinMaterial` cards.
+* **Titlebar Transparency Anti-Pattern**: Never set `window.titlebarAppearsTransparent = true` on windows with navigation split views or toolbars. Setting it strips native background diffusion and causes scrolled content to visually collide with the window title and toolbar controls.
+* **Scroll-Edge Separation**: Always configure `window.titlebarSeparatorStyle = .automatic` and `.toolbarBackground(.visible, for: .windowToolbar)` on detail scroll views so content dynamically blurs behind chrome with a native separator line.
+* **Safe Area Integrity**: Never set `hostingController.safeAreaRegions = []` on `NavigationSplitView` windows. Doing so clips sidebar and detail views into the traffic light buttons and breaks titlebar safe area insets.
+* **NavigationSplitView Selection**: Always declare sidebar selection state as an `Optional` binding (e.g. `@State private var selectedItem: SettingsNavigationItem? = .dashboard`) to ensure `List(selection:)` correctly updates detail panes upon selection.
+* **Form Layout Standards**: Use standard `Form` with `.formStyle(.grouped)` for preferences, eliminating nested rounded boxes and manual spacing hacks.
+
 ---
 
 ## 3. Build and Test Verification
 
 * **Building**: Run `./build.sh` (or `scripts/build.sh`).
-* **Packaging**: Run `./make_dmg.sh` (or `scripts/make_dmg.sh`).
+* **Packaging**: Run `./make_dmg.sh` (or `scripts/make_dmg.sh`). Whenever application binary changes are made, always run `./make_dmg.sh` to package the updated build into `Live Wallpaper.dmg`.
 * **Sandboxing Note**: Swift macros and `swift-plugin-server` require process execution outside nested sandbox boundaries.
 
 ---
@@ -57,4 +65,5 @@ Failing to follow this teardown order causes VideoToolbox surface leaks and lock
 
 * Full technical context, subsystem maps, and runbooks: Refer to `.agents/projectcontext.md`.
 * macOS development guidelines, Swift 6+ patterns, Liquid Glass HIG, and API references: Refer to `.agents/skills/macos-development/SKILL.md`.
+* macOS 27 Golden Gate design system, Liquid Glass UI kit, and native layout patterns: Refer to `.agents/skills/macos-golden-gate-design/SKILL.md`.
 

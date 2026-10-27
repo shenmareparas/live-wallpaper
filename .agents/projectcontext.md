@@ -26,25 +26,21 @@ live-wallpaper/
 │   │   ├── ThumbnailService.swift          # Asynchronous frame extractor with NSCache memory pooling
 │   │   └── FallbackDesktopService.swift    # CoreGraphics dark-mode instructions bitmap generator
 │   └── Views/
-│       ├── SettingsView.swift              # Main window coordinator and liquid glass sidebar navigation
+│       ├── SettingsView.swift              # Main window coordinator and NavigationSplitView sidebar navigation
 │       ├── Dashboard/                      # Real-time engine telemetry, hero preview, and monitor layout
 │       │   ├── DashboardView.swift
 │       │   ├── ActiveWallpaperHeroCard.swift
 │       │   ├── MonitorArrangementView.swift
-│       │   ├── WaveformPulseView.swift
 │       │   └── DiagnosticsMetricsGrid.swift
 │       ├── Wallpaper/                      # Wallpaper library manager and YouTube downloader interface
 │       │   ├── WallpaperSettingsView.swift
 │       │   ├── WallpaperLibraryCard.swift
 │       │   └── YouTubeDownloaderSection.swift
-│       ├── Settings/                       # Speed sliders, crossfade presets, and auto-shuffle timers
+│       ├── Settings/                       # Native grouped Form for speed sliders, crossfade presets, auto-shuffle
 │       │   └── EngineSettingsView.swift
 │       ├── About/                          # Versioning, author credits, and information
 │       │   └── AboutView.swift
-│       └── Components/                     # Reusable UI primitives and notification keys
-│           ├── VisualEffectView.swift
-│           ├── TabButton.swift
-│           ├── CustomCorners.swift
+│       └── Components/                     # Notification constants
 │           └── NotificationNames.swift
 ├── Resources/
 │   ├── Info.plist                          # Application bundle configuration (LSUIElement = true)
@@ -58,12 +54,18 @@ live-wallpaper/
 │   └── make_dmg.sh                         # DMG packaging script
 ├── build.sh                                # Root convenience wrapper calling scripts/build.sh
 ├── make_dmg.sh                             # Root convenience wrapper calling scripts/make_dmg.sh
+├── .agents/
+│   ├── agents.md                           # AI agent guidelines, rules, and technical invariants
+│   ├── projectcontext.md                   # Detailed internal engineering architecture notes
+│   └── skills/                             # Agent skills and macOS development knowledge modules
+│       ├── macos-development/
+│       └── macos-golden-gate-design/
 └── dmg_maker/                              # Standalone Swift Package for generating installer DMGs
 ```
 
 ### Module Responsibilities
 
-* **LiveWallpaperApp.swift**: SwiftUI `@main` lifecycle entrypoint bridging AppKit execution through `@NSApplicationDelegateAdaptor(AppDelegate.self)`.
+* **LiveWallpaperApp.swift**: SwiftUI `@main` lifecycle entrypoint bridging AppKit execution through `@NSApplicationDelegateAdaptor(AppDelegate.self)`. Declares native `Settings` scene hosting `SettingsView`.
 * **AppDelegate.swift**: Coordinates `NSStatusItem` menu, workspace sleep/wake and distributed lock/unlock notification observers, shuffle timer, and multi-monitor `WallpaperWindow` lifecycle.
 * **WallpaperWindow.swift**: Borderless `NSWindow` overlay pinned at `CGWindowLevelForKey(.desktopWindow)`. Manages `AVQueuePlayer`, `AVPlayerLooper`, occlusion polling (`kCGWindowListOptionOnScreenOnly`), Low Power Mode detection, and two-phase unlock image-to-video crossfades.
 * **WallpaperStoreService.swift**: Manages integration with native macOS `entries.json` dynamic wallpaper store, deterministic static UUID alignment (`LW000000-0000-4000-8000-000000000003`), and `WallpaperAgent` restarts.
@@ -71,8 +73,10 @@ live-wallpaper/
 * **YouTubeDownloaderService.swift**: Locates `yt-dlp` in system paths and downloads online videos directly into Application Support storage.
 * **ThumbnailService.swift**: Background frame extractor using `AVAssetImageGenerator` and RAM caching with `NSCache<NSURL, NSImage>`.
 * **FallbackDesktopService.swift**: Generates a high-resolution dark-mode onboarding image when no wallpaper is selected and applies it via `NSWorkspace.shared.setDesktopImageURL`.
-* **SettingsView.swift**: Master navigation coordinator implementing Liquid Glass sidebar aesthetics, Stage Manager activation policy switching (`.regular` <-> `.accessory`), and tab switching.
-* **EngineSettingsView.swift**: Playback speed multipliers (0.5x to 2.0x), crossfade presets (0.1s to 2.0s), auto-shuffle intervals (1m to 1h), and launch-at-login settings.
+* **SettingsView.swift**: Master navigation coordinator implementing a native macOS 27 `NavigationSplitView` with a full-height sidebar, optional selection bindings, and unified toolbar integration.
+* **DashboardView.swift**: Unboxed real-time telemetry dashboard, screen arrangement topology viewer, and native toolbar quick controls (Pause/Resume, Shuffle, Restart).
+* **WallpaperSettingsView.swift**: Native desktop wallpaper gallery supporting `.searchable` filename search, drag-and-drop video imports, contextual menus, and YouTube downloader sheet/popover.
+* **EngineSettingsView.swift**: Native grouped `Form` (`.formStyle(.grouped)`) for playback speed multipliers (0.5x to 2.0x), crossfade presets (0.1s to 2.0s), auto-shuffle intervals (1m to 1h), and launch-at-login settings.
 
 ---
 
@@ -125,12 +129,21 @@ live-wallpaper/
 * In-memory cache uses `NSCache<NSURL, NSImage>` with automatic system memory pressure eviction.
 * Layout height placeholders prevent grid jumping while metadata resolves.
 
-### 8. Stage Manager and Unified Window Coordinates
+### 8. Stage Manager and macOS 27 Window Architecture
 * When Settings is opened, application activation policy switches to `.regular` to participate in Dock and Stage Manager spaces. When closed, it reverts to `.accessory`.
-* `.ignoresSafeArea()` and `safeAreaRegions = []` allow the sidebar material to anchor cleanly from edge to edge following native rounded corners.
+* **Safe Area Insets**: Removing `safeAreaRegions = []` from `NSHostingController` ensures `NavigationSplitView` properly respects window titlebar safe area insets. The sidebar material naturally reaches the top window edge while detail views stay properly aligned below the toolbar.
+* **Scroll-Edge Material Diffusion**: Setting `window.titlebarSeparatorStyle = .automatic` and applying `.toolbarBackground(.visible, for: .windowToolbar)` ensures that when detail content (such as Preferences `Form` or Library grid) scrolls up, it diffuses cleanly behind the Liquid Glass toolbar with a subtle separator line, preventing text collisions with the window title.
+* **NavigationSplitView Optional Selection**: Declaring `@State private var selectedItem: SettingsNavigationItem?` ensures `List(selection:)` handles macOS sidebar selection changes reliably.
 
 ### 9. SwiftUI Modernization for macOS 27
 * All `.onChange` calls migrated to modern zero-argument or two-argument `(oldValue, newValue)` forms, resolving deprecation warnings under macOS 27 and Swift 6.4.
+
+### 10. macOS 27 Golden Gate UI Overhaul
+* Implemented according to the `macos-golden-gate-design` skill guidelines:
+  * **Zero Card Budget**: Replaced nested `.ultraThinMaterial` and `.thinMaterial` rounded cards with flat, scannable detail planes.
+  * **Native Grouped Form**: Migrated Preferences from custom `VStack` card sections to a standard `Form` with `.formStyle(.grouped)`.
+  * **Unified Toolbar Placement**: Migrated action buttons (Play/Pause, Shuffle, Restart WallpaperAgent, Add Wallpaper) to native macOS `.toolbar` items with keyboard shortcuts (`Space`, `Cmd+R`, `Cmd+O`).
+  * **Native Desktop Gallery**: Wallpaper gallery uses adaptive grids, double-click to apply, `.searchable` filtering, and macOS `.contextMenu` actions.
 
 ---
 
@@ -153,7 +166,7 @@ Run from project root:
 ```bash
 ./make_dmg.sh
 ```
-This builds and executes the standalone `dmg_maker` tool to produce `Live Wallpaper.dmg`.
+This builds and executes the standalone `dmg_maker` tool to produce `Live Wallpaper.dmg`. Whenever changes are made to application code or resources, always run `./make_dmg.sh` after `./build.sh` so the packaged disk image reflects the latest build.
 
 ---
 

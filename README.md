@@ -25,11 +25,14 @@ A lightweight, ultra-optimized native macOS menu bar application built in pure *
 -   **Multi-Monitor Geometry Mapping**: Automatically detects display arrangements (`NSScreen.screens`), handles hot-plugging, resolution changes, and renders synchronized wallpaper windows for every connected display.
 -   **Interactive Monitor Preview**: Live visualizer inside the Dashboard displaying connected monitor orientations, aspect ratios, and active display bounds.
 
-### 🎨 UI & Liquid Glass Design
+### UI & macOS 27 Golden Gate Design
 
--   **Modern Liquid Glass Interface**: Translucent vibrancy sidebars, frosted glass panels (`NSVisualEffectView` backing materials), and unified typography with macOS Human Interface Guidelines.
--   **Real-time Status Dashboard**: Glowing, color-coded engine state badge (Active, Suspended, Paused, Eco Mode) paired with an audio-style video rendering pulse waveform.
--   **Active Wallpaper Hero Card**: Displays high-resolution thumbnail previews, video format info, file size, direct **Reveal in Finder** action, and source website links.
+-   **macOS 27 Golden Gate Interface**: Built with a unified one-window composition, native `NavigationSplitView` edge-to-edge sidebar, and restrained Liquid Glass toolbar styling.
+-   **Resizable Unified Window**: Full-fledged resizable management window (`min 720x480 pt`) with native auto-saving window frame state and native window chrome.
+-   **Scroll-Edge Material Diffusion**: Configured with `titlebarSeparatorStyle = .automatic` and `.toolbarBackground(.visible, for: .windowToolbar)` so scrolled content blurs cleanly behind the toolbar with dynamic separators.
+-   **Native Form Preferences**: Grouped `Form` layout (`.formStyle(.grouped)`) replacing nested card containers with accessible sliders, steppers, and system pickers.
+-   **Unboxed Dashboard & Diagnostics**: Scannable real-time telemetry strip (Playback state, obscuration, power profile, hardware HEVC decoder) and connected monitor arrangements without card accumulation.
+-   **Interactive Wallpaper Gallery**: Native desktop wallpaper grid with double-click to apply, `.searchable` filename filtering, and macOS `.contextMenu` actions.
 -   **Resolution-Independent Menu Bar Icon**: Vector SVG menu bar icon compiled directly into an Xcode Asset Catalog (`Assets.car`) with template rendering for automatic light/dark tinting.
 -   **Stage Manager & Dock Policy Switching**: Dynamically promotes activation policy from `.accessory` (stealth menu bar agent) to `.regular` when the Settings panel is opened, allowing it to participate in Stage Manager stages and Cmd+Tab switching.
 
@@ -176,25 +179,21 @@ live-wallpaper/
 │   │   ├── ThumbnailService.swift          # Asynchronous frame extractor with NSCache memory pooling
 │   │   └── FallbackDesktopService.swift    # CoreGraphics dark-mode instructions bitmap generator
 │   └── Views/
-│       ├── SettingsView.swift              # Main window coordinator & liquid glass sidebar navigation
+│       ├── SettingsView.swift              # Main window coordinator & NavigationSplitView sidebar navigation
 │       ├── Dashboard/                      # Real-time engine telemetry, hero preview, and monitor layout
 │       │   ├── DashboardView.swift
 │       │   ├── ActiveWallpaperHeroCard.swift
 │       │   ├── MonitorArrangementView.swift
-│       │   ├── WaveformPulseView.swift
 │       │   └── DiagnosticsMetricsGrid.swift
 │       ├── Wallpaper/                      # Wallpaper library manager & YouTube downloader interface
 │       │   ├── WallpaperSettingsView.swift
 │       │   ├── WallpaperLibraryCard.swift
 │       │   └── YouTubeDownloaderSection.swift
-│       ├── Settings/                       # Speed sliders, crossfade presets & auto-shuffle timers
+│       ├── Settings/                       # Native grouped Form for speed, crossfade, and auto-shuffle
 │       │   └── EngineSettingsView.swift
-│       ├── About/                          # Versioning, author credits & GitHub links
+│       ├── About/                          # Versioning, author credits & information
 │       │   └── AboutView.swift
-│       └── Components/                     # Reusable glassmorphic UI primitives & notifications
-│           ├── VisualEffectView.swift
-│           ├── TabButton.swift
-│           ├── CustomCorners.swift
+│       └── Components/                     # Notification constants
 │           └── NotificationNames.swift
 ├── Resources/
 │   ├── Info.plist                          # Application bundle configuration (LSUIElement = true)
@@ -212,6 +211,8 @@ live-wallpaper/
 │   ├── agents.md                           # AI agent guidelines, rules, and technical invariants
 │   ├── projectcontext.md                   # Detailed internal engineering architecture notes
 │   └── skills/                             # Agent skills and macOS development knowledge modules
+│       ├── macos-development/
+│       └── macos-golden-gate-design/
 └── dmg_maker/                              # Standalone Swift Package for generating installer DMGs
 ```
 

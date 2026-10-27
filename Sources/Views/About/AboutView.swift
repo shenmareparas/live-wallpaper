@@ -10,8 +10,8 @@ struct AboutView: View {
                 Image(nsImage: iconImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 88, height: 88)
-                    .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
+                    .frame(width: 96, height: 96)
+                    .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
             } else {
                 Image(systemName: "photo.on.rectangle.angled")
                     .font(.system(size: 64))
@@ -20,27 +20,36 @@ struct AboutView: View {
             
             VStack(spacing: 4) {
                 Text("Live Wallpaper")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(.title2)
+                    .fontWeight(.bold)
                 
                 Text("Version 1.1.0")
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(.secondary)
             }
             
-            Text("A performance-optimized macOS live video wallpaper engine that pauses during fullscreen tasks and sleep states.")
-                .font(.system(size: 11, design: .rounded))
+            Text("A lightweight, performance-focused macOS live video wallpaper engine that integrates seamlessly with Tahoe and Golden Gate WallpaperAgent sessions.")
+                .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
-                .padding(.horizontal, 24)
+                .frame(maxWidth: 420)
+                .padding(.horizontal, 20)
             
             Divider()
-                .padding(.horizontal, 40)
+                .frame(width: 200)
             
-            Text("© 2026 Paras Shenmare. All rights reserved.")
-                .font(.system(size: 9))
-                .foregroundColor(.secondary.opacity(0.6))
+            VStack(spacing: 4) {
+                Text("Developed for macOS 26 & macOS 27")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("© 2026 Paras Shenmare. All rights reserved.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary.opacity(0.7))
+            }
             
             Spacer()
         }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

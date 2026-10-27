@@ -7,7 +7,7 @@ struct LiveWallpaperApp: App {
 
     var body: some Scene {
         Settings {
-            Text("Live Wallpaper Settings")
+            SettingsView()
         }
     }
 }

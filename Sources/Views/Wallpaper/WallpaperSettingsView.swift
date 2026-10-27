@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct WallpaperSettingsView: View {
     @Binding var videoPath: String
@@ -20,35 +21,69 @@ struct WallpaperSettingsView: View {
     @Binding var ytDownloadProgress: String
     let downloadYouTubeVideo: (String) -> Void
     
-    @State private var showYTDownloadPopover = false
+    @State private var searchQuery: String = ""
+    @State private var showYTDownloadSheet = false
+    
+    private var filteredWallpapers: [URL] {
+        if searchQuery.trimmingCharacters(in: .whitespaces).isEmpty {
+            return importedWallpapers
+        }
+        return importedWallpapers.filter {
+            $0.lastPathComponent.localizedCaseInsensitiveContains(searchQuery)
+        }
+    }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Header Row with Plus Button
-            HStack {
-                Text("Wallpaper Library")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                
-                Spacer()
-                
+        Group {
+            if importedWallpapers.isEmpty {
+                ContentUnavailableView {
+                    Label("No Wallpapers in Library", systemImage: "photo.on.rectangle.angled")
+                } description: {
+                    Text("Drop MP4 or MOV video files here, or use the Add button in the toolbar.")
+                } actions: {
+                    Button(action: selectVideoFile) {
+                        Label("Import Video File...", systemImage: "plus")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            } else if filteredWallpapers.isEmpty {
+                ContentUnavailableView.search(text: searchQuery)
+            } else {
+                ScrollView(.vertical, showsIndicators: true) {
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 180, maximum: 240), spacing: 16)],
+                        spacing: 16
+                    ) {
+                        ForEach(filteredWallpapers, id: \.self) { url in
+                            WallpaperLibraryCard(
+                                url: url,
+                                isActive: videoPath == url.path,
+                                onApply: { selectWallpaper(url) },
+                                onDelete: { deleteWallpaper(url) }
+                            )
+                        }
+                    }
+                    .padding(20)
+                }
+            }
+        }
+        .searchable(text: $searchQuery, placement: .toolbar, prompt: "Search wallpapers")
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
                 Menu {
                     Button(action: selectVideoFile) {
                         Label("Import Video File...", systemImage: "plus.viewfinder")
                     }
-                    Button(action: { showYTDownloadPopover = true }) {
+                    .keyboardShortcut("o", modifiers: [.command])
+                    
+                    Button(action: { showYTDownloadSheet = true }) {
                         Label("Download from YouTube...", systemImage: "play.rectangle.fill")
                     }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.accentColor)
-                        .frame(width: 24, height: 24)
-                        .background(Color.primary.opacity(0.05))
-                        .clipShape(Circle())
+                    Label("Add Wallpaper", systemImage: "plus")
                 }
-                .menuStyle(.borderlessButton)
-                .frame(width: 32)
-                .popover(isPresented: $showYTDownloadPopover, arrowEdge: .top) {
+                .help("Add video wallpaper to library")
+                .popover(isPresented: $showYTDownloadSheet, arrowEdge: .bottom) {
                     YouTubeDownloaderSection(
                         ytURL: $ytURL,
                         isDownloadingYT: $isDownloadingYT,
@@ -58,55 +93,25 @@ struct WallpaperSettingsView: View {
                     )
                 }
             }
-            
-            // Library list
-            if importedWallpapers.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .font(.system(size: 24))
-                        .foregroundColor(.secondary.opacity(0.4))
-                    Text("Library is empty. Click + to import or download.")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, minHeight: 180)
-                .background(Color.primary.opacity(0.015))
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.primary.opacity(0.04), lineWidth: 1)
-                )
-            } else {
-                ScrollView {
-                    let columns = [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ]
-                    
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(importedWallpapers, id: \.self) { url in
-                            WallpaperLibraryCard(
-                                url: url,
-                                isActive: videoPath == url.path,
-                                onApply: { selectWallpaper(url) },
-                                onDelete: { deleteWallpaper(url) }
-                            )
-                        }
-                    }
-                    .padding(.vertical, 2)
-                }
-            }
         }
         .onDrop(of: [.fileURL], isTargeted: $isDraggingOver) { providers in
             guard let provider = providers.first else { return false }
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                if let url = url, url.isFileURL, ["mp4", "mov", "m4v", "webm", "avi", "mkv"].contains(url.pathExtension.lowercased()) {
+                if let url = url {
                     DispatchQueue.main.async {
                         onVideoDropped(url.path)
                     }
                 }
             }
             return true
+        }
+        .overlay {
+            if isDraggingOver {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.accentColor, lineWidth: 2)
+                    .background(Color.accentColor.opacity(0.05))
+                    .allowsHitTesting(false)
+            }
         }
     }
 }

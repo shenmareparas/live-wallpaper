@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-import AVFoundation
 
 struct WallpaperLibraryCard: View {
     let url: URL
@@ -19,147 +18,137 @@ struct WallpaperLibraryCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            ZStack {
-                if let image = thumbnailImage {
-                    Image(nsImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 94)
-                        .frame(maxWidth: .infinity)
-                        .clipped()
-                        .cornerRadius(8)
-                } else {
-                    ZStack {
-                        Color.primary.opacity(0.03)
-                        Image(systemName: "video.fill")
-                            .foregroundColor(.secondary.opacity(0.4))
-                            .font(.system(size: 16))
+            ZStack(alignment: .topTrailing) {
+                // Thumbnail
+                Group {
+                    if let image = thumbnailImage {
+                        Image(nsImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else {
+                        ZStack {
+                            Color.secondary.opacity(0.06)
+                            Image(systemName: "video.fill")
+                                .foregroundColor(.secondary.opacity(0.5))
+                                .font(.system(size: 18))
+                        }
                     }
-                    .frame(height: 94)
-                    .frame(maxWidth: .infinity)
-                    .cornerRadius(8)
                 }
+                .frame(height: 110)
+                .frame(maxWidth: .infinity)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(
+                            isActive ? Color.accentColor : (isHovered ? Color.primary.opacity(0.2) : Color.primary.opacity(0.08)),
+                            lineWidth: isActive ? 2 : 1
+                        )
+                )
                 
-                // Hover Actions Overlay
-                if isHovered || isActive {
-                    Color.black.opacity(isActive ? 0.45 : 0.25)
-                        .cornerRadius(8)
+                // Badges
+                HStack(spacing: 4) {
+                    if isActive {
+                        Text("Active")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.accentColor)
+                            .clipShape(Capsule())
+                    }
                     
-                    VStack {
-                        HStack {
-                            if isActive {
-                                Text("Active")
-                                    .font(.system(size: 9, weight: .bold, design: .rounded))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(Color.green)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(4)
-                            }
-                            Spacer()
-                            
-                            if let ytURLStr = youtubeURL, let ytURL = URL(string: ytURLStr) {
-                                Button(action: {
-                                    NSWorkspace.shared.open(ytURL)
-                                }) {
-                                    Image(systemName: "play.rectangle.fill")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.white)
-                                        .frame(width: 22, height: 22)
-                                        .background(Color.black.opacity(0.6))
-                                        .clipShape(Circle())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .help("Open YouTube link")
-                            }
-                            
-                            Button(action: onDelete) {
-                                Image(systemName: "trash.fill")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(.white)
-                                    .frame(width: 22, height: 22)
-                                    .background(Color.black.opacity(0.6))
-                                    .clipShape(Circle())
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                        .padding(6)
-                        
-                        Spacer()
-                        
-                        if !isActive {
-                            Button(action: onApply) {
-                                Text("Apply Wallpaper")
-                                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                                    .foregroundColor(.black)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 4)
-                                    .background(Color.white)
-                                    .cornerRadius(6)
-                                    .shadow(color: .black.opacity(0.15), radius: 2)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .padding(.bottom, 8)
-                        }
+                    if youtubeURL != nil {
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.white)
+                            .padding(4)
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(6)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture(count: 2) {
+                onApply()
+            }
+            .onTapGesture {
+                onApply()
+            }
+            
+            // Labels
+            VStack(alignment: .leading, spacing: 2) {
+                Text(url.deletingPathExtension().lastPathComponent)
+                    .font(.system(size: 11, weight: isActive ? .semibold : .regular))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                
+                HStack {
+                    if !fileSizeString.isEmpty {
+                        Text(fileSizeString)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    if isHovered && !isActive {
+                        Text("Click to Apply")
+                            .font(.caption2)
+                            .foregroundColor(.accentColor)
                     }
                 }
             }
-            .frame(height: 94)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isActive ? Color.green : (isHovered ? Color.primary.opacity(0.15) : Color.primary.opacity(0.05)), lineWidth: isActive ? 2 : 1)
-            )
-            .shadow(color: isActive ? Color.green.opacity(0.2) : (isHovered ? Color.black.opacity(0.08) : Color.clear), radius: isActive ? 6 : 3, x: 0, y: isActive ? 3 : 1)
-            
-            VStack(alignment: .leading, spacing: 1) {
-                Text(url.lastPathComponent)
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                Text(fileSizeString.isEmpty ? " " : fileSizeString)
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary)
-            }
-            .padding(.horizontal, 2)
         }
         .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.15)) {
+            withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
             }
         }
-        .onAppear {
-            loadMetadataAndThumbnail()
-        }
-        .onChange(of: url) {
-            loadMetadataAndThumbnail()
-        }
-    }
-    
-    private func loadMetadataAndThumbnail() {
-        let targetURL = url
-        
-        ThumbnailService.shared.loadThumbnailAsync(for: targetURL) { image in
-            self.thumbnailImage = image
-        }
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            let sizeStr = self.calculateSize(for: targetURL)
-            DispatchQueue.main.async {
-                self.fileSizeString = sizeStr
+        .contextMenu {
+            Button(action: onApply) {
+                Label("Set as Wallpaper", systemImage: "checkmark.circle")
+            }
+            
+            Button(action: {
+                NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: "")
+            }) {
+                Label("Reveal in Finder", systemImage: "folder")
+            }
+            
+            if let ytStr = youtubeURL, let yt = URL(string: ytStr) {
+                Button(action: {
+                    NSWorkspace.shared.open(yt)
+                }) {
+                    Label("Open YouTube Source", systemImage: "safari")
+                }
+            }
+            
+            Divider()
+            
+            Button(role: .destructive, action: onDelete) {
+                Label("Delete Wallpaper", systemImage: "trash")
             }
         }
+        .onAppear {
+            loadThumbnail()
+            loadFileMetadata()
+        }
     }
     
-    private func calculateSize(for targetURL: URL) -> String {
-        var sizeStr = ""
-        if let values = try? targetURL.resourceValues(forKeys: [.fileSizeKey]),
-           let size = values.fileSize {
-            let formatter = ByteCountFormatter()
-            formatter.allowedUnits = [.useMB, .useKB]
-            formatter.countStyle = .file
-            sizeStr = formatter.string(fromByteCount: Int64(size))
+    private func loadThumbnail() {
+        ThumbnailService.shared.loadThumbnailAsync(for: url) { image in
+            self.thumbnailImage = image
         }
-        return sizeStr
+    }
+    
+    private func loadFileMetadata() {
+        let fm = FileManager.default
+        if let attrs = try? fm.attributesOfItem(atPath: url.path),
+           let size = attrs[.size] as? UInt64 {
+            let formatter = ByteCountFormatter()
+            formatter.allowedUnits = [.useMB, .useGB]
+            formatter.countStyle = .file
+            self.fileSizeString = formatter.string(fromByteCount: Int64(size))
+        }
     }
 }

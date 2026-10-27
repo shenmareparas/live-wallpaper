@@ -2,6 +2,24 @@ import SwiftUI
 import UniformTypeIdentifiers
 import ServiceManagement
 
+enum SettingsNavigationItem: String, CaseIterable, Identifiable {
+    case dashboard = "Dashboard"
+    case library = "Wallpaper Library"
+    case preferences = "Preferences"
+    case about = "About"
+    
+    var id: String { rawValue }
+    
+    var systemImage: String {
+        switch self {
+        case .dashboard: return "gauge.with.needle"
+        case .library: return "photo.stack"
+        case .preferences: return "slider.horizontal.3"
+        case .about: return "info.circle"
+        }
+    }
+}
+
 struct SettingsView: View {
     @AppStorage("videoPath") private var videoPath: String = ""
     
@@ -13,7 +31,7 @@ struct SettingsView: View {
     
     @State private var launchAtLogin: Bool = false
     @State private var isDraggingOver = false
-    @State private var selectedTab: String = "Dashboard"
+    @State private var selectedItem: SettingsNavigationItem? = .dashboard
 
     // Live engine states
     @State private var isPlaying: Bool = true
@@ -31,108 +49,87 @@ struct SettingsView: View {
     @State private var ytDownloadProgress: String = ""
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Sidebar Navigation
-            VStack(alignment: .leading, spacing: 6) {
-                // App Title
-                HStack(spacing: 8) {
-                    Image(systemName: "sparkles.tv.fill")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.accentColor)
-                    Text("Live Wallpaper")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .lineLimit(1)
+        NavigationSplitView {
+            List(selection: $selectedItem) {
+                Section("Live Engine") {
+                    Label(SettingsNavigationItem.dashboard.rawValue, systemImage: SettingsNavigationItem.dashboard.systemImage)
+                        .tag(SettingsNavigationItem.dashboard)
+                    Label(SettingsNavigationItem.library.rawValue, systemImage: SettingsNavigationItem.library.systemImage)
+                        .tag(SettingsNavigationItem.library)
                 }
-                .padding(.horizontal, 8)
-                .padding(.top, 48)
-                .padding(.bottom, 16)
                 
-                TabButton(title: "Dashboard", icon: "square.grid.2x2.fill", selectedTab: $selectedTab)
-                TabButton(title: "Wallpaper", icon: "photo.fill", selectedTab: $selectedTab)
-                TabButton(title: "Settings", icon: "gearshape.fill", selectedTab: $selectedTab)
-                
-                Spacer()
-                
-                TabButton(title: "About", icon: "info.circle.fill", selectedTab: $selectedTab)
-            }
-            .padding(.bottom, 20)
-            .padding(.horizontal, 12)
-            .frame(width: 175)
-            .frame(maxHeight: .infinity)
-            .background(VisualEffectView(material: .sidebar, blendingMode: .behindWindow))
-            
-            // Content Pane
-            ZStack {
-                VisualEffectView(material: .contentBackground, blendingMode: .behindWindow)
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 0) {
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 20) {
-                            if selectedTab == "Dashboard" {
-                                DashboardView(
-                                    isPlaying: isPlaying,
-                                    isObscured: isObscured,
-                                    isLowPower: isLowPower,
-                                    isManualPaused: isManualPaused
-                                )
-                            } else if selectedTab == "Wallpaper" {
-                                WallpaperSettingsView(
-                                    videoPath: $videoPath,
-                                    launchAtLogin: $launchAtLogin,
-                                    isDraggingOver: $isDraggingOver,
-                                    selectVideoFile: selectVideoFile,
-                                    toggleLaunchAtLogin: toggleLaunchAtLogin,
-                                    removeSelectedWallpaper: removeSelectedWallpaper,
-                                    onVideoDropped: copyToAppSupportAndRegister,
-                                    importedWallpapers: importedWallpapers,
-                                    selectWallpaper: selectWallpaper,
-                                    deleteWallpaper: deleteWallpaper,
-                                    getThumbnailURL: { ThumbnailService.shared.getThumbnailURL(for: $0) },
-                                    ytURL: $ytURL,
-                                    isDownloadingYT: $isDownloadingYT,
-                                    ytDownloadError: $ytDownloadError,
-                                    ytDownloadProgress: $ytDownloadProgress,
-                                    downloadYouTubeVideo: downloadYouTubeVideo
-                                )
-                            } else if selectedTab == "Settings" {
-                                EngineSettingsView(
-                                    playbackSpeed: $playbackSpeed,
-                                    transitionDuration: $transitionDuration,
-                                    shuffleEnabled: $shuffleEnabled,
-                                    shuffleInterval: $shuffleInterval,
-                                    launchAtLogin: $launchAtLogin,
-                                    toggleLaunchAtLogin: toggleLaunchAtLogin
-                                )
-                            } else {
-                                AboutView()
-                            }
-                        }
-                        .padding(24)
-                    }
+                Section("Configuration") {
+                    Label(SettingsNavigationItem.preferences.rawValue, systemImage: SettingsNavigationItem.preferences.systemImage)
+                        .tag(SettingsNavigationItem.preferences)
+                    Label(SettingsNavigationItem.about.rawValue, systemImage: SettingsNavigationItem.about.systemImage)
+                        .tag(SettingsNavigationItem.about)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)
+        } detail: {
+            Group {
+                switch selectedItem ?? .dashboard {
+                case .dashboard:
+                    DashboardView(
+                        isPlaying: isPlaying,
+                        isObscured: isObscured,
+                        isLowPower: isLowPower,
+                        isManualPaused: isManualPaused
+                    )
+                case .library:
+                    WallpaperSettingsView(
+                        videoPath: $videoPath,
+                        launchAtLogin: $launchAtLogin,
+                        isDraggingOver: $isDraggingOver,
+                        selectVideoFile: selectVideoFile,
+                        toggleLaunchAtLogin: toggleLaunchAtLogin,
+                        removeSelectedWallpaper: removeSelectedWallpaper,
+                        onVideoDropped: copyToAppSupportAndRegister,
+                        importedWallpapers: importedWallpapers,
+                        selectWallpaper: selectWallpaper,
+                        deleteWallpaper: deleteWallpaper,
+                        getThumbnailURL: { ThumbnailService.shared.getThumbnailURL(for: $0) },
+                        ytURL: $ytURL,
+                        isDownloadingYT: $isDownloadingYT,
+                        ytDownloadError: $ytDownloadError,
+                        ytDownloadProgress: $ytDownloadProgress,
+                        downloadYouTubeVideo: downloadYouTubeVideo
+                    )
+                case .preferences:
+                    EngineSettingsView(
+                        playbackSpeed: $playbackSpeed,
+                        transitionDuration: $transitionDuration,
+                        shuffleEnabled: $shuffleEnabled,
+                        shuffleInterval: $shuffleInterval,
+                        launchAtLogin: $launchAtLogin,
+                        toggleLaunchAtLogin: toggleLaunchAtLogin
+                    )
+                case .about:
+                    AboutView()
+                }
+            }
+            .navigationTitle((selectedItem ?? .dashboard).rawValue)
+            .toolbarBackground(.visible, for: .windowToolbar)
         }
-        .frame(width: 760, height: 540)
-        .ignoresSafeArea()
+        .frame(minWidth: 720, minHeight: 480)
         .onAppear {
             self.launchAtLogin = SMAppService.mainApp.status == .enabled
             refreshEngineStatus()
             loadImportedWallpapers()
             WallpaperStoreService.shared.saveSharedConfig(path: videoPath)
         }
-        .onChange(of: videoPath) {
-            WallpaperStoreService.shared.saveSharedConfig(path: videoPath)
-            WallpaperStoreService.shared.registerInSystemWallpaperStore(videoPath: videoPath)
+        .onChange(of: videoPath) { _, newValue in
+            WallpaperStoreService.shared.saveSharedConfig(path: newValue)
+            WallpaperStoreService.shared.registerInSystemWallpaperStore(videoPath: newValue)
         }
-        .onChange(of: shuffleEnabled) {
+        .onChange(of: shuffleEnabled) { _, _ in
             AppDelegate.shared?.setupShuffleTimer()
         }
-        .onChange(of: shuffleInterval) {
+        .onChange(of: shuffleInterval) { _, _ in
             AppDelegate.shared?.setupShuffleTimer()
         }
-        .onChange(of: playbackSpeed) {
+        .onChange(of: playbackSpeed) { _, _ in
             NotificationCenter.default.post(name: .wallpaperVideoChanged, object: nil)
         }
         .onReceive(NotificationCenter.default.publisher(for: .wallpaperStatusUpdated)) { _ in
